@@ -15,7 +15,7 @@ while ensuring **no two queens touch**, not even diagonally.
 ## Features (so far)
 
 - 7×7 interactive board
-- Colored regions (data-driven)
+- Colored regions hardcoded
 - Three-state cells: _Empty → X → Queen_
 - Reset button + queen counter
 - Responsive design
