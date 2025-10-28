@@ -37,6 +37,9 @@ export default function Home() {
   // board state
   const [board, setBoard] = useState<CellState[][]>(createEmptyBoard());
 
+  // board type state (fixed or random)
+  const [boardType, setBoardType] = useState<"fixed" | "random">("fixed");
+
   // reset board when size changes
   useEffect(() => {
     setBoard(createEmptyBoard());
@@ -67,11 +70,20 @@ export default function Home() {
   const [backendMessage, setBackendMessage] = useState<string>("");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/hello")
+    const endpoint =
+      boardType === "fixed"
+        ? "http://localhost:8080/api/board"
+        : "http://localhost:8080/api/random-board";
+
+    fetch(`${endpoint}?t=${Date.now()}`)
       .then((res) => res.json())
-      .then((data) => setBackendMessage(data.message))
-      .catch((err) => console.error("Error fetching backend:", err));
-  }, []);
+      .then((data) => {
+        setSize(data.size);
+        setRegions(data.regions);
+        setBoard(createEmptyBoard());
+      })
+      .catch((err) => console.error("Error fetching board:", err));
+  }, [boardType]);
 
   // validation state
   const [validation, setValidation] = useState<null | {
@@ -133,6 +145,30 @@ export default function Home() {
       >
         {checking ? "Checking..." : "Check Board"}
       </button>
+
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={() => setBoardType("fixed")}
+          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
+            boardType === "fixed"
+              ? "bg-blue-600 text-white focus:ring-blue-400"
+              : "bg-gray-200 hover:bg-gray-300"
+          }`}
+        >
+          Fixed Layout
+        </button>
+
+        <button
+          onClick={() => setBoardType("random")}
+          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
+            boardType === "random"
+              ? "bg-blue-600 text-white focus:ring-blue-400"
+              : "bg-gray-200 hover:bg-gray-300"
+          }`}
+        >
+          Random Layout
+        </button>
+      </div>
 
       {validation && (
         <div className="mb-6 text-sm text-gray-800 max-w-md">
