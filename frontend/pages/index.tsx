@@ -1,21 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // Define cell types
 type CellState = "empty" | "x" | "queen";
 
 export default function Home() {
-  const size = 7;
+  // Board configuration from backend
+  const [size, setSize] = useState<number>(7);
+  const [regions, setRegions] = useState<number[][]>([]);
 
-  // Hardcoded regions for the 7x7 board
-  const regions = [
-    [0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 0, 2, 2, 0],
-    [0, 1, 1, 3, 3, 2, 2],
-    [0, 1, 4, 4, 3, 3, 2],
-    [0, 0, 0, 4, 4, 2, 2],
-    [0, 0, 6, 6, 5, 5, 2],
-    [0, 0, 0, 6, 6, 5, 5],
-  ];
+  useEffect(() => {
+    fetch("http://localhost:8080/api/board")
+      .then((res) => res.json())
+      .then((data) => {
+        setSize(data.size);
+        setRegions(data.regions);
+      })
+      .catch((err) => console.error("Error fetching board:", err));
+  }, []);
 
   // colormapping for regions
   const regionColors: Record<number, string> = {
@@ -55,6 +56,16 @@ export default function Home() {
   // count queens
   const queenCount = board.flat().filter((c) => c === "queen").length;
 
+  // message from backend
+  const [backendMessage, setBackendMessage] = useState<string>("");
+
+  useEffect(() => {
+    fetch("http://localhost:8080/api/hello")
+      .then((res) => res.json())
+      .then((data) => setBackendMessage(data.message))
+      .catch((err) => console.error("Error fetching backend:", err));
+  }, []);
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
       <h1 className="text-4xl font-bold mb-4 text-blue-700">Queens Puzzle</h1>
@@ -77,31 +88,37 @@ export default function Home() {
         Reset Board
       </button>
 
-      <div
-        className="grid gap-1"
-        style={{ gridTemplateColumns: `repeat(${size}, 3rem)` }}
-      >
-        {board.map((row, i) =>
-          row.map((cell, j) => {
-            const regionId = regions[i][j];
-            const baseColor = regionColors[regionId];
+      {/* Step 4 — conditional rendering */}
+      {regions.length > 0 ? (
+        <div
+          className="grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${size}, 3rem)` }}
+        >
+          {board.map((row, i) =>
+            row.map((cell, j) => {
+              const regionId = regions[i][j];
+              const baseColor = regionColors[regionId];
 
-            return (
-              <div
-                key={`${i}-${j}`}
-                onClick={() => toggleCell(i, j)}
-                className={`relative w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer font-bold transition ${baseColor}`}
-              >
-                {/* Show only text without background overlay */}
-                {cell === "queen" && (
-                  <span className="text-black text-lg">Q</span>
-                )}
-                {cell === "x" && <span className="text-black text-lg">X</span>}
-              </div>
-            );
-          })
-        )}
-      </div>
+              return (
+                <div
+                  key={`${i}-${j}`}
+                  onClick={() => toggleCell(i, j)}
+                  className={`relative w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer font-bold transition ${baseColor}`}
+                >
+                  {cell === "queen" && (
+                    <span className="text-black text-lg">Q</span>
+                  )}
+                  {cell === "x" && (
+                    <span className="text-black text-lg">X</span>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        <p>Loading board...</p>
+      )}
     </main>
   );
 }
