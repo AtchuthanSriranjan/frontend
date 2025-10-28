@@ -1,6 +1,9 @@
 // Import React
 import React, { useState } from "react";
 
+// Define allowed cell states
+type CellState = "empty" | "x" | "queen";
+
 // interactive 7x7 "Queens Puzzle" board.
 // Users can click on cells to toggle queens on or off.
 export default function Home() {
@@ -8,20 +11,24 @@ export default function Home() {
   const size = 7;
 
   // Helper to create a fresh empty board
-  const createEmptyBoard = () =>
-    Array.from({ length: size }, () => Array(size).fill(false));
+  const createEmptyBoard = (): CellState[][] =>
+    Array.from({ length: size }, () => Array(size).fill("empty"));
 
-  // Initialize a 2D boolean array to represent the board.
-  // Each cell is initially set to "false" meaning: no queen.
-  const [board, setBoard] = useState<boolean[][]>(createEmptyBoard());
+  // Initialize board state
+  const [board, setBoard] = useState<CellState[][]>(createEmptyBoard());
 
-  // Cell Toggle Function
-  // Flips the cell's boolean value (true → false or false → true)
+  // Cycle through states: empty → X → Queen → empty
   const toggleCell = (row: number, col: number) => {
     const newBoard = board.map((r, i) =>
-      r.map((c, j) => (i === row && j === col ? !c : c))
+      r.map((c, j) => {
+        if (i === row && j === col) {
+          if (c === "empty") return "x";
+          if (c === "x") return "queen";
+          return "empty";
+        }
+        return c;
+      })
     );
-    // Update the state with the new board
     setBoard(newBoard);
   };
 
@@ -30,6 +37,9 @@ export default function Home() {
   const resetBoard = () => {
     setBoard(createEmptyBoard());
   };
+
+  // Count how many queens are currently on the board
+  const queenCount = board.flat().filter((c) => c === "queen").length;
 
   return (
     // === Page Layout Container ===
@@ -41,6 +51,12 @@ export default function Home() {
       {/* --- Description text --- */}
       <p className="text-gray-700 mb-6">
         Click on a square to place/remove a queen 👑
+      </p>
+
+      {/* --- Queen Counter --- */}
+      <p className="text-gray-800 mb-2">
+        Queens placed:{" "}
+        <span className="font-bold text-blue-700">{queenCount}</span>
       </p>
 
       {/* --- Controls --- */}
@@ -60,22 +76,22 @@ export default function Home() {
           gridTemplateColumns: `repeat(${size}, 3rem)`,
         }}
       >
-        {/* --- Render each row and cell --- */}
         {board.map((row, i) =>
           row.map((cell, j) => (
             <div
-              key={`${i}-${j}`} // Unique key for each cell
-              onClick={() => toggleCell(i, j)} // Toggle cell on click
-              className={`w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer transition
+              key={`${i}-${j}`}
+              onClick={() => toggleCell(i, j)}
+              className={`w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer transition font-bold
                 ${
-                  cell
-                    ? "bg-red-400 text-white font-bold" // Active cell → red background + "Q"
-                    : "bg-green-200 hover:bg-green-300" // Empty cell → light green, darker on hover
+                  cell === "queen"
+                    ? "bg-red-400 text-white"
+                    : cell === "x"
+                    ? "bg-green-200 text-gray-700"
+                    : "bg-green-200 hover:bg-green-300"
                 }
               `}
             >
-              {/* Display a "Q" (Queen) only if cell is active */}
-              {cell ? "Q" : ""}
+              {cell === "queen" ? "Q" : cell === "x" ? "X" : ""}
             </div>
           ))
         )}
