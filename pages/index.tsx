@@ -8,13 +8,13 @@ export default function Home() {
 
   // Hardcoded regions for the 7x7 board
   const regions = [
-    [0, 0, 0, 0, 3, 3, 3],
-    [0, 1, 1, 0, 3, 3, 3],
-    [0, 1, 2, 2, 3, 4, 4],
-    [0, 1, 2, 2, 4, 4, 4],
-    [5, 5, 2, 6, 6, 6, 4],
-    [5, 5, 5, 6, 6, 6, 4],
-    [5, 5, 5, 6, 6, 6, 4],
+    [0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 2, 2, 0],
+    [0, 1, 1, 3, 3, 2, 2],
+    [0, 1, 4, 4, 3, 3, 2],
+    [0, 0, 0, 4, 4, 2, 2],
+    [0, 0, 6, 6, 5, 5, 2],
+    [0, 0, 0, 6, 6, 5, 5],
   ];
 
   // colormapping for regions
@@ -90,17 +90,13 @@ export default function Home() {
               <div
                 key={`${i}-${j}`}
                 onClick={() => toggleCell(i, j)}
-                className={`w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer transition font-bold ${baseColor}
-                  ${
-                    cell === "queen"
-                      ? "bg-red-500 text-white"
-                      : cell === "x"
-                      ? "bg-yellow-400 text-gray-700"
-                      : ""
-                  }
-                `}
+                className={`relative w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer font-bold transition ${baseColor}`}
               >
-                {cell === "queen" ? "Q" : cell === "x" ? "X" : ""}
+                {/* Show only text without background overlay */}
+                {cell === "queen" && (
+                  <span className="text-black text-lg">Q</span>
+                )}
+                {cell === "x" && <span className="text-black text-lg">X</span>}
               </div>
             );
           })
