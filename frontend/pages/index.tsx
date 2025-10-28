@@ -179,7 +179,7 @@ export default function Home() {
         >
           Random Layout
         </button>
-
+      </div>
 
       {validation && (
         <div className="mb-6 text-sm text-gray-800 max-w-md">
