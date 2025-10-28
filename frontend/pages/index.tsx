@@ -40,6 +40,9 @@ export default function Home() {
   // board type state (fixed or random)
   const [boardType, setBoardType] = useState<"fixed" | "random">("fixed");
 
+  // refresh key to force reload
+  const [refreshKey, setRefreshKey] = useState(0);
+
   // reset board when size changes
   useEffect(() => {
     setBoard(createEmptyBoard());
@@ -83,7 +86,7 @@ export default function Home() {
         setBoard(createEmptyBoard());
       })
       .catch((err) => console.error("Error fetching board:", err));
-  }, [boardType]);
+  }, [boardType, refreshKey]);
 
   // validation state
   const [validation, setValidation] = useState<null | {
@@ -159,7 +162,15 @@ export default function Home() {
         </button>
 
         <button
-          onClick={() => setBoardType("random")}
+          onClick={() => {
+            if (boardType === "random") {
+              // already in random mode → just refresh
+              setRefreshKey((k) => k + 1);
+            } else {
+              // switch to random mode
+              setBoardType("random");
+            }
+          }}
           className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
             boardType === "random"
               ? "bg-blue-600 text-white focus:ring-blue-400"
@@ -168,7 +179,7 @@ export default function Home() {
         >
           Random Layout
         </button>
-      </div>
+
 
       {validation && (
         <div className="mb-6 text-sm text-gray-800 max-w-md">
