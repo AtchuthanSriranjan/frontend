@@ -33,7 +33,13 @@ export default function Home() {
   const createEmptyBoard = (): CellState[][] =>
     Array.from({ length: size }, () => Array(size).fill("empty"));
 
+  // board state
   const [board, setBoard] = useState<CellState[][]>(createEmptyBoard());
+
+  // reset board when size changes
+  useEffect(() => {
+    setBoard(createEmptyBoard());
+  }, [size]);
 
   // cell toggle logic/cycle
   const toggleCell = (row: number, col: number) => {
@@ -66,21 +72,52 @@ export default function Home() {
       .catch((err) => console.error("Error fetching backend:", err));
   }, []);
 
+  // validation state
+  const [validation, setValidation] = useState<null | {
+    valid: boolean;
+    invalidRows: number[];
+    invalidCols: number[];
+    invalidRegions: number[];
+    diagonalConflicts: number[][];
+  }>(null);
+
+  // validate board with backend
+  const checkBoard = async () => {
+    try {
+      setChecking(true);
+      const res = await fetch("http://localhost:8080/api/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          size,
+          regions,
+          board,
+        }),
+      });
+      const data = await res.json();
+      setValidation(data);
+    } catch (e) {
+      console.error("Validate error:", e);
+      setValidation(null);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const [checking, setChecking] = useState(false);
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
       <h1 className="text-4xl font-bold mb-4 text-blue-700">Queens Puzzle</h1>
-
       <p className="text-gray-700 mb-2 text-center">
         Goal: 1 queen per row, column, and color region.
         <br />
         Tap once → X | Tap twice → Queen | Tap thrice → Empty.
       </p>
-
       <p className="text-gray-800 mb-4">
         Queens placed:{" "}
         <span className="font-bold text-blue-700">{queenCount}</span>
       </p>
-
       <button
         onClick={resetBoard}
         className="mb-6 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -88,6 +125,54 @@ export default function Home() {
         Reset Board
       </button>
 
+      <button
+        onClick={checkBoard}
+        className="mb-4 px-4 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        disabled={checking || regions.length === 0 || queenCount === 0}
+      >
+        {checking ? "Checking..." : "Check Board"}
+      </button>
+
+      {validation && (
+        <div className="mb-6 text-sm text-gray-800 max-w-md">
+          {validation.valid ? (
+            <div className="font-semibold text-emerald-700">
+              Board is valid.
+            </div>
+          ) : (
+            <>
+              <div className="font-semibold text-red-700">
+                Board is invalid.
+              </div>
+              {validation.invalidRows.length > 0 && (
+                <div>
+                  Invalid rows:{" "}
+                  {validation.invalidRows.map((r) => r + 1).join(", ")}
+                </div>
+              )}
+              {validation.invalidCols.length > 0 && (
+                <div>
+                  Invalid columns:{" "}
+                  {validation.invalidCols.map((c) => c + 1).join(", ")}
+                </div>
+              )}
+              {validation.invalidRegions.length > 0 && (
+                <div>
+                  Invalid regions: {validation.invalidRegions.join(", ")}
+                </div>
+              )}
+              {validation.diagonalConflicts.length > 0 && (
+                <div>
+                  Adjacent conflicts at:{" "}
+                  {validation.diagonalConflicts
+                    .map(([r, c]) => `(${r + 1},${c + 1})`)
+                    .join(", ")}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {/* Step 4 — conditional rendering */}
       {regions.length > 0 ? (
         <div
