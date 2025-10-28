@@ -9,7 +9,8 @@ export default function Home() {
   const [regions, setRegions] = useState<number[][]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/board")
+    fetch("http://localhost:8080/api/random-board")
+      //fetch("http://localhost:8080/api/board")
       .then((res) => res.json())
       .then((data) => {
         setSize(data.size);
