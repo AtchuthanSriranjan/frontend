@@ -14,36 +14,37 @@ while ensuring no two queens touch, not even diagonally.
 
 ## Features (so far)
 
-- 7×7 interactive board  
-- Colored regions (hardcoded layout)  
-- Three-state cells: Empty → X → Queen  
-- Reset button + queen counter  
-- Responsive design (mobile-friendly layout)
+- 7×7 interactive board
+- Colored regions (hardcoded layout)
+- Three-state cells: Empty → X → Queen
+- Reset button and queen counter
+- Backend integration for region data (`/api/board`)
+- Validation endpoint (`/api/validate`)
+- Dynamic board verification through frontend
+- Responsive design for mobile and desktop
 
 ---
 
 ## Planned Next Steps
 
-- [ ] Add region outlines for better visualization  
-- [ ] Implement rule validation (rows, columns, regions, no-touch rule)  
-- [ ] Create Java Spring Boot backend  
-  - `/api/puzzles` — serve puzzle layouts  
-  - `/api/validate` — check board validity  
-- [ ] Integrate frontend ↔ backend communication via REST API  
-- [ ] Deploy frontend (Vercel) + backend (Render or Railway)  
-- [ ] Generate random puzzle boards  
-- [ ] Write a solver algorithm
+- [ ] Visual highlighting for invalid rows, columns, or regions
+- [ ] Generate random puzzle boards
+- [ ] Add solver algorithm for automated checks
+- [ ] Refine validation feedback (more detailed UI hints)
+- [ ] Deploy frontend (Vercel) and backend (Render or Railway)
+- [ ] Add tests for backend logic and API responses
 
 ---
 
 ## Tech Stack
 
 **Frontend:** Next.js (TypeScript) + Tailwind CSS  
-**Backend:** Java 17 + Spring Boot (planned)  
-**Hosting:** Vercel (frontend) + Render/Railway (backend)  
-**Version Control:** GitHub
+**Backend:** Java 17 + Spring Boot  
+**API Design:** REST (JSON)  
+**Build Tool:** Maven  
+**Version Control:** Git + GitHub  
+**Hosting (planned):** Vercel (frontend)
 
 ---
 
 ## Project Structure
-
