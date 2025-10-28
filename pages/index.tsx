@@ -7,11 +7,13 @@ export default function Home() {
   // Define the grid size 7x7 board
   const size = 7;
 
+  // Helper to create a fresh empty board
+  const createEmptyBoard = () =>
+    Array.from({ length: size }, () => Array(size).fill(false));
+
   // Initialize a 2D boolean array to represent the board.
   // Each cell is initially set to "false" meaning: no queen.
-  const [board, setBoard] = useState<boolean[][]>(
-    Array.from({ length: size }, () => Array(size).fill(false))
-  );
+  const [board, setBoard] = useState<boolean[][]>(createEmptyBoard());
 
   // Cell Toggle Function
   // Flips the cell's boolean value (true → false or false → true)
@@ -21,6 +23,12 @@ export default function Home() {
     );
     // Update the state with the new board
     setBoard(newBoard);
+  };
+
+  // Reset Function
+  // Clears the board back to all false
+  const resetBoard = () => {
+    setBoard(createEmptyBoard());
   };
 
   return (
@@ -34,6 +42,14 @@ export default function Home() {
       <p className="text-gray-700 mb-6">
         Click on a square to place/remove a queen 👑
       </p>
+
+      {/* --- Controls --- */}
+      <button
+        onClick={resetBoard}
+        className="mb-6 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        Reset Board
+      </button>
 
       {/* --- Game Board Container --- */}
       {/* Use CSS grid to arrange cells into a 7x7 grid */}
