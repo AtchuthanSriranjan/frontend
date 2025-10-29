@@ -61,13 +61,28 @@ export default function Home() {
       })
     );
     setBoard(newBoard);
+    // start timer when first queen is placed
+    if (!isRunning && newBoard.flat().includes("x")) {
+      setIsRunning(true);
+    }
   };
 
   // reset board
-  const resetBoard = () => setBoard(createEmptyBoard());
+  const resetBoard = () => {
+    setBoard(createEmptyBoard());
+    setSeconds(0);
+    setIsRunning(false);
+    setBestTime(null);
+    localStorage.removeItem("bestTime");
+  };
 
   // count queens
   const queenCount = board.flat().filter((c) => c === "queen").length;
+
+  // timer state
+  const [seconds, setSeconds] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [bestTime, setBestTime] = useState<number | null>(null);
 
   // message from backend
   const [backendMessage, setBackendMessage] = useState<string>("");
@@ -84,6 +99,8 @@ export default function Home() {
         setSize(data.size);
         setRegions(data.regions);
         setBoard(createEmptyBoard());
+        setSeconds(0);
+        setIsRunning(false);
       })
       .catch((err) => console.error("Error fetching board:", err));
   }, [boardType, refreshKey]);
@@ -110,6 +127,21 @@ export default function Home() {
         });
         const data = await res.json();
         setValidation(data);
+        if (
+          data.valid &&
+          board.flat().filter((c) => c === "queen").length === size
+        ) {
+          setIsRunning(false);
+
+          // Update best time if this solve is faster or no best time yet
+          setBestTime((prevBest) => {
+            if (prevBest === null || seconds < prevBest) {
+              localStorage.setItem("bestTime", String(seconds));
+              return seconds;
+            }
+            return prevBest;
+          });
+        }
       } catch (e) {
         console.error("Auto-validate error:", e);
       }
@@ -117,6 +149,25 @@ export default function Home() {
 
     validate();
   }, [board, regions, size]);
+
+  // timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (isRunning) {
+      timer = setInterval(() => setSeconds((s) => s + 1), 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRunning]);
+
+  // Load best time from localStorage on mount
+  useEffect(() => {
+    const storedBest = localStorage.getItem("bestTime");
+    if (storedBest) {
+      setBestTime(Number(storedBest));
+    }
+  }, []);
 
   return (
     <main className="min-h-screen flex flex-col items-center bg-gray-100 py-10">
@@ -126,17 +177,13 @@ export default function Home() {
         <br />
         Tap once → X | Tap twice → Queen | Tap thrice → Empty.
       </p>
-      <p className="text-gray-800 mb-4">
-        Queens placed:{" "}
-        <span className="font-bold text-blue-700">{queenCount}</span>
-      </p>
+
       <button
         onClick={resetBoard}
         className="mb-6 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
       >
         Reset Board
       </button>
-
       {validation && (
         <div
           className={`mt-4 mb-6 p-3 rounded text-center w-64
@@ -155,7 +202,6 @@ export default function Home() {
             : "Board has errors."}
         </div>
       )}
-
       <div className="flex gap-3 mb-6">
         <button
           onClick={() => setBoardType("fixed")}
@@ -190,6 +236,32 @@ export default function Home() {
         </button>
       </div>
 
+      {/* Queen count and timer above the board */}
+      <div className="flex justify-between items-center w-[22rem] mb-2 text-gray-800">
+        <p>
+          Queens placed:{" "}
+          <span className="font-bold text-blue-700">{queenCount}</span>
+        </p>
+        <div className="text-right">
+          <p>
+            Time:{" "}
+            <span className="font-bold text-blue-700">
+              {String(Math.floor(seconds / 60)).padStart(2, "0")}:
+              {String(seconds % 60).padStart(2, "0")}
+            </span>
+          </p>
+          {bestTime !== null && (
+            <p className="text-sm text-gray-600">
+              Best:{" "}
+              <span className="font-semibold text-emerald-700">
+                {String(Math.floor(bestTime / 60)).padStart(2, "0")}:
+                {String(bestTime % 60).padStart(2, "0")}
+              </span>
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* conditional rendering */}
       {regions.length > 0 ? (
         <div
@@ -220,7 +292,7 @@ export default function Home() {
                 `}
                 >
                   {cell === "queen" && (
-                    <span className="text-black text-lg">Q</span>
+                    <span className="text-black text-xl">♛</span>
                   )}
                   {cell === "x" && (
                     <span className="text-black text-lg">X</span>
