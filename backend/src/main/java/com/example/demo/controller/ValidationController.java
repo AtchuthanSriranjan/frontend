@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.controller;
 
 import com.example.demo.dto.BoardRequest;
 import com.example.demo.dto.ValidationResult;
@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
 
+/**
+ * Controller to handle board validation requests.
+ */
 @RestController
 public class ValidationController {
 
@@ -15,6 +18,7 @@ public class ValidationController {
     public ValidationResult validate(@RequestBody BoardRequest req) {
         ValidationResult result = new ValidationResult();
 
+        // Extract board data
         int n = req.size;
         String[][] board = req.board;
         int[][] regions = req.regions;
@@ -47,7 +51,7 @@ public class ValidationController {
             if (count != 1) result.invalidCols.add(c);
         }
 
-        // Rule 3: exactly one queen per color region (by region id)
+        // Rule 3: exactly one queen per color region (by region id/ number)
         Map<Integer, Integer> regionQueenCount = new HashMap<>();
         Set<Integer> allRegionIds = new HashSet<>();
         for (int r = 0; r < n; r++) {
@@ -66,7 +70,6 @@ public class ValidationController {
 
         // Rule 4: queens cannot "touch" each other (no adjacency in any of 8 directions)
         // We interpret "touch" as adjacent (king's move) conflicts.
-        // If you later want "no diagonal lines at any distance", we can change this check.
         boolean[][] isQueen = new boolean[n][n];
         for (int[] q : queens) isQueen[q[0]][q[1]] = true;
 
