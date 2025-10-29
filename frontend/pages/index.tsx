@@ -122,8 +122,29 @@ export default function Home() {
 
   const [checking, setChecking] = useState(false);
 
+  // Auto-validate board whenever it changes
+  useEffect(() => {
+    if (regions.length === 0) return;
+
+    const validate = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ size, regions, board }),
+        });
+        const data = await res.json();
+        setValidation(data);
+      } catch (e) {
+        console.error("Auto-validate error:", e);
+      }
+    };
+
+    validate();
+  }, [board, regions, size]);
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+    <main className="min-h-screen flex flex-col items-center bg-gray-100 py-10">
       <h1 className="text-4xl font-bold mb-4 text-blue-700">Queens Puzzle</h1>
       <p className="text-gray-700 mb-2 text-center">
         Goal: 1 queen per row, column, and color region.
@@ -148,6 +169,19 @@ export default function Home() {
       >
         {checking ? "Checking..." : "Check Board"}
       </button>
+
+      {validation && (
+        <div
+          className={`mt-4 p-3 rounded text-center w-64
+          ${
+            validation.valid
+              ? "bg-green-200 text-green-800"
+              : "bg-red-200 text-red-800"
+          }`}
+        >
+          {validation.valid ? "Board is valid!" : "Board has errors."}
+        </div>
+      )}
 
       <div className="flex gap-3 mb-6">
         <button
@@ -221,7 +255,7 @@ export default function Home() {
           )}
         </div>
       )}
-      {/* Step 4 — conditional rendering */}
+      {/* conditional rendering */}
       {regions.length > 0 ? (
         <div
           className="grid gap-1"
@@ -232,17 +266,40 @@ export default function Home() {
               const regionId = regions[i][j];
               const baseColor = regionColors[regionId];
 
+              const isInvalidCell =
+                validation &&
+                !validation.valid &&
+                (validation.invalidRows.includes(i) ||
+                  validation.invalidCols.includes(j) ||
+                  validation.invalidRegions.includes(regionId) ||
+                  validation.diagonalConflicts.some(
+                    ([r, c]) => r === i && c === j
+                  ));
+
               return (
                 <div
                   key={`${i}-${j}`}
                   onClick={() => toggleCell(i, j)}
-                  className={`relative w-12 h-12 flex items-center justify-center border border-gray-400 cursor-pointer font-bold transition ${baseColor}`}
+                  className={`relative w-12 h-12 flex items-center justify-center cursor-pointer font-bold transition
+                  ${baseColor} border border-gray-400
+                `}
                 >
                   {cell === "queen" && (
                     <span className="text-black text-lg">Q</span>
                   )}
                   {cell === "x" && (
                     <span className="text-black text-lg">X</span>
+                  )}
+
+                  {/* Overlay diagonal red stripes for ANY violation */}
+                  {isInvalidCell && (
+                    <div
+                      className="absolute inset-0 pointer-events-none rounded"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(135deg, rgba(239,68,68,0.65) 0px, rgba(239,68,68,0.65) 8px, transparent 8px, transparent 16px)",
+                      }}
+                    />
                   )}
                 </div>
               );
