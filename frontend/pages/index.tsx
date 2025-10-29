@@ -97,31 +97,6 @@ export default function Home() {
     diagonalConflicts: number[][];
   }>(null);
 
-  // validate board with backend
-  const checkBoard = async () => {
-    try {
-      setChecking(true);
-      const res = await fetch("http://localhost:8080/api/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          size,
-          regions,
-          board,
-        }),
-      });
-      const data = await res.json();
-      setValidation(data);
-    } catch (e) {
-      console.error("Validate error:", e);
-      setValidation(null);
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  const [checking, setChecking] = useState(false);
-
   // Auto-validate board whenever it changes
   useEffect(() => {
     if (regions.length === 0) return;
@@ -162,35 +137,34 @@ export default function Home() {
         Reset Board
       </button>
 
-      <button
-        onClick={checkBoard}
-        className="mb-4 px-4 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-        disabled={checking || regions.length === 0 || queenCount === 0}
-      >
-        {checking ? "Checking..." : "Check Board"}
-      </button>
-
       {validation && (
         <div
-          className={`mt-4 p-3 rounded text-center w-64
+          className={`mt-4 mb-6 p-3 rounded text-center w-64
           ${
-            validation.valid
-              ? "bg-green-200 text-green-800"
+            validation.valid && queenCount === size
+              ? "bg-green-300 text-green-900 font-semibold"
+              : validation.valid
+              ? "bg-gray-200 text-gray-800"
               : "bg-red-200 text-red-800"
           }`}
         >
-          {validation.valid ? "Board is valid!" : "Board has errors."}
+          {validation.valid && queenCount === size
+            ? "You solved it!"
+            : validation.valid
+            ? "Board is valid!"
+            : "Board has errors."}
         </div>
       )}
 
       <div className="flex gap-3 mb-6">
         <button
           onClick={() => setBoardType("fixed")}
-          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
-            boardType === "fixed"
-              ? "bg-blue-600 text-white focus:ring-blue-400"
-              : "bg-gray-200 hover:bg-gray-300"
-          }`}
+          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 transition
+            ${
+              boardType === "fixed"
+                ? "bg-blue-600 text-white focus:ring-blue-400"
+                : "bg-gray-200 text-black hover:bg-gray-300 focus:ring-gray-400"
+            }`}
         >
           Fixed Layout
         </button>
@@ -205,56 +179,17 @@ export default function Home() {
               setBoardType("random");
             }
           }}
-          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
-            boardType === "random"
-              ? "bg-blue-600 text-white focus:ring-blue-400"
-              : "bg-gray-200 hover:bg-gray-300"
-          }`}
+          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 transition
+            ${
+              boardType === "random"
+                ? "bg-blue-600 text-white focus:ring-blue-400"
+                : "bg-gray-200 text-black hover:bg-gray-300 focus:ring-gray-400"
+            }`}
         >
           Random Layout
         </button>
       </div>
 
-      {validation && (
-        <div className="mb-6 text-sm text-gray-800 max-w-md">
-          {validation.valid ? (
-            <div className="font-semibold text-emerald-700">
-              Board is valid.
-            </div>
-          ) : (
-            <>
-              <div className="font-semibold text-red-700">
-                Board is invalid.
-              </div>
-              {validation.invalidRows.length > 0 && (
-                <div>
-                  Invalid rows:{" "}
-                  {validation.invalidRows.map((r) => r + 1).join(", ")}
-                </div>
-              )}
-              {validation.invalidCols.length > 0 && (
-                <div>
-                  Invalid columns:{" "}
-                  {validation.invalidCols.map((c) => c + 1).join(", ")}
-                </div>
-              )}
-              {validation.invalidRegions.length > 0 && (
-                <div>
-                  Invalid regions: {validation.invalidRegions.join(", ")}
-                </div>
-              )}
-              {validation.diagonalConflicts.length > 0 && (
-                <div>
-                  Adjacent conflicts at:{" "}
-                  {validation.diagonalConflicts
-                    .map(([r, c]) => `(${r + 1},${c + 1})`)
-                    .join(", ")}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
       {/* conditional rendering */}
       {regions.length > 0 ? (
         <div
