@@ -1,19 +1,40 @@
 package com.example.demo.dto;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ValidationResult {
-    public boolean valid;
+    private boolean valid;
+    private List<Integer> invalidRows;
+    private List<Integer> invalidCols;
+    private List<Integer> invalidRegions;
+    private List<int[]> diagonalConflicts;
 
-    // 0-based indices of rows/columns that violate "exactly one queen"
-    public List<Integer> invalidRows = new ArrayList<>();
-    public List<Integer> invalidCols = new ArrayList<>();
+    public ValidationResult(boolean valid, List<Integer> invalidRows, List<Integer> invalidCols,
+                            List<Integer> invalidRegions, List<int[]> diagonalConflicts) {
+        this.valid = valid;
+        this.invalidRows = invalidRows;
+        this.invalidCols = invalidCols;
+        this.invalidRegions = invalidRegions;
+        this.diagonalConflicts = diagonalConflicts;
+    }
 
-    // region IDs that violate "exactly one queen"
-    public List<Integer> invalidRegions = new ArrayList<>();
+    public boolean isValid() {
+        return valid;
+    }
 
-    // pairs of cell coordinates that are adjacent conflicts (no touching rule)
-    // each entry is [r, c] for a conflicting queen cell
-    public List<int[]> diagonalConflicts = new ArrayList<>();
+    public List<Integer> getInvalidRows() {
+        return invalidRows;
+    }
+
+    public List<Integer> getInvalidCols() {
+        return invalidCols;
+    }
+
+    public List<Integer> getInvalidRegions() {
+        return invalidRegions;
+    }
+
+    public List<int[]> getDiagonalConflicts() {
+        return diagonalConflicts;
+    }
 }
