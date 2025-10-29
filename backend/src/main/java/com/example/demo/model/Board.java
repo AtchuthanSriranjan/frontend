@@ -21,15 +21,10 @@ public class Board {
 
     // Factory method to create a random board
     public static Board randomBoard(int size, int regionCount) {
-        Random rand = new Random();
-        int[][] regions = new int[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                regions[i][j] = rand.nextInt(regionCount);
-            }
-        }
+        int[][] regions = com.example.demo.util.RegionGenerator.generateRegions(size, regionCount);
         return new Board(size, regions);
     }
+
 
     // Factory method to create the fixed predefined board
     public static Board fixedBoard() {

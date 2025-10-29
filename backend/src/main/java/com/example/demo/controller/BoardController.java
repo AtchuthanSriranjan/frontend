@@ -15,7 +15,7 @@ public class BoardController {
     }
 
     @GetMapping("/api/board")
-    public Map<String, Object> getBoard() {
+    public Map<String, Object> getFixedBoard() {
         return boardService.getFixedBoard();
     }
 }
