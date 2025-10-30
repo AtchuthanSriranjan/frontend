@@ -133,6 +133,24 @@ export default function Home() {
         ) {
           setIsRunning(false);
 
+          // Ask for player name
+          const name =
+            prompt("Enter your name for the leaderboard:", "Guest") || "Guest";
+
+          // Save to Spring Boot backend
+          fetch("http://localhost:8080/api/leaderboard", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              timeSeconds: seconds,
+              size,
+              boardType: boardType, // "fixed" or "random"
+            }),
+          }).catch((err) =>
+            console.error("Failed to save leaderboard entry:", err)
+          );
+
           // Update best time if this solve is faster or no best time yet
           setBestTime((prevBest) => {
             if (prevBest === null || seconds < prevBest) {
@@ -262,7 +280,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* conditional rendering */}
+      {/* Board rendering */}
       {regions.length > 0 ? (
         <div
           className="grid gap-1"
@@ -316,6 +334,69 @@ export default function Home() {
       ) : (
         <p>Loading board...</p>
       )}
+
+      {/* Leaderboard Section */}
+      <div className="mt-8 w-[22rem] text-gray-800">
+        <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">
+          Leaderboard
+        </h2>
+        <Leaderboard />
+      </div>
     </main>
   );
+
+  function Leaderboard() {
+    const [entries, setEntries] = React.useState<
+      {
+        name: string;
+        timeSeconds: number;
+        size: number;
+        boardType: string;
+        solvedAt: string;
+      }[]
+    >([]);
+
+    // Load leaderboard on mount
+    React.useEffect(() => {
+      fetch("http://localhost:8080/api/leaderboard")
+        .then((res) => res.json())
+        .then((data) => setEntries(data))
+        .catch((err) => console.error("Error loading leaderboard:", err));
+    }, []);
+
+    if (entries.length === 0) {
+      return (
+        <p className="text-sm text-gray-500 text-center">
+          No results yet — solve a board to record your time!
+        </p>
+      );
+    }
+
+    const fmt = (s: number) =>
+      `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
+        2,
+        "0"
+      )}`;
+
+    return (
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b border-gray-300">
+            <th className="text-left py-1">Name</th>
+            <th className="text-center py-1">Time</th>
+            <th className="text-center py-1">Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((e, i) => (
+            <tr key={i} className="border-b border-gray-200">
+              <td className="py-1">{e.name}</td>
+              <td className="text-center py-1">{fmt(e.timeSeconds)}</td>
+              <td className="text-center py-1">{e.size}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
 }
