@@ -8,16 +8,7 @@ export default function Home() {
   const [size, setSize] = useState<number>(7);
   const [regions, setRegions] = useState<number[][]>([]);
 
-  useEffect(() => {
-    fetch("http://localhost:8080/api/random-board")
-      //fetch("http://localhost:8080/api/board")
-      .then((res) => res.json())
-      .then((data) => {
-        setSize(data.size);
-        setRegions(data.regions);
-      })
-      .catch((err) => console.error("Error fetching board:", err));
-  }, []);
+  // Initial board is loaded by the effect below (depends on size/boardType/refreshKey)
 
   // colormapping for regions
   const regionColors: Record<number, string> = {
@@ -28,6 +19,8 @@ export default function Home() {
     4: "bg-slate-200",
     5: "bg-red-300",
     6: "bg-yellow-200",
+    7: "bg-pink-200",
+    8: "bg-teal-200",
   };
 
   // create an empty board
@@ -46,6 +39,7 @@ export default function Home() {
   // reset board when size changes
   useEffect(() => {
     setBoard(createEmptyBoard());
+    setRegions([]);
   }, [size]);
 
   // cell toggle logic/cycle
@@ -90,10 +84,10 @@ export default function Home() {
   useEffect(() => {
     const endpoint =
       boardType === "fixed"
-        ? "http://localhost:8080/api/board"
-        : "http://localhost:8080/api/random-board";
+        ? `http://localhost:8080/api/board?size=${size}`
+        : `http://localhost:8080/api/random-board?size=${size}`;
 
-    fetch(`${endpoint}?t=${Date.now()}`)
+    fetch(endpoint)
       .then((res) => res.json())
       .then((data) => {
         setSize(data.size);
@@ -103,7 +97,7 @@ export default function Home() {
         setIsRunning(false);
       })
       .catch((err) => console.error("Error fetching board:", err));
-  }, [boardType, refreshKey]);
+  }, [boardType, refreshKey, size]);
 
   // validation state
   const [validation, setValidation] = useState<null | {
@@ -280,123 +274,135 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Board rendering */}
-      {regions.length > 0 ? (
-        <div
-          className="grid gap-1"
-          style={{ gridTemplateColumns: `repeat(${size}, 3rem)` }}
+      {/* Board size selector */}
+      <div className="mb-4">
+        <label className="mr-2 font-semibold text-gray-700">Board size:</label>
+        <select
+          value={size}
+          onChange={(e) => setSize(Number(e.target.value))}
+          className="px-2 py-1 border border-gray-400 rounded"
         >
-          {board.map((row, i) =>
-            row.map((cell, j) => {
-              const regionId = regions[i][j];
-              const baseColor = regionColors[regionId];
+          <option value={7}>7 × 7</option>
+          <option value={8}>8 × 8</option>
+          <option value={9}>9 × 9</option>
+        </select>
+      </div>
 
-              const isInvalidCell =
-                validation &&
-                !validation.valid &&
-                (validation.invalidRows.includes(i) ||
-                  validation.invalidCols.includes(j) ||
-                  validation.invalidRegions.includes(regionId) ||
-                  validation.diagonalConflicts.some(
-                    ([r, c]) => r === i && c === j
-                  ));
+      {/* Board rendering */}
+      {regions.length === size &&
+      regions.every((row) => row && row.length === size) ? (
+        <div className="relative flex justify-center w-full">
+          {/* Centered board */}
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${size}, 3rem)` }}
+          >
+            {board.map((row, i) =>
+              row.map((cell, j) => {
+                const regionId = regions[i]?.[j] ?? 0;
+                const baseColor = regionColors[regionId];
 
-              return (
-                <div
-                  key={`${i}-${j}`}
-                  onClick={() => toggleCell(i, j)}
-                  className={`relative w-12 h-12 flex items-center justify-center cursor-pointer font-bold transition
-                  ${baseColor} border border-gray-400
-                `}
-                >
-                  {cell === "queen" && (
-                    <span className="text-black text-xl">♛</span>
-                  )}
-                  {cell === "x" && (
-                    <span className="text-black text-lg">X</span>
-                  )}
+                const isInvalidCell =
+                  validation &&
+                  !validation.valid &&
+                  (validation.invalidRows.includes(i) ||
+                    validation.invalidCols.includes(j) ||
+                    validation.invalidRegions.includes(regionId) ||
+                    validation.diagonalConflicts.some(
+                      ([r, c]) => r === i && c === j
+                    ));
 
-                  {/* Overlay diagonal red stripes for ANY violation */}
-                  {isInvalidCell && (
-                    <div
-                      className="absolute inset-0 pointer-events-none rounded"
-                      style={{
-                        backgroundImage:
-                          "repeating-linear-gradient(135deg, rgba(239,68,68,0.65) 0px, rgba(239,68,68,0.65) 8px, transparent 8px, transparent 16px)",
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })
-          )}
+                return (
+                  <div
+                    key={`${i}-${j}`}
+                    onClick={() => toggleCell(i, j)}
+                    className={`relative w-12 h-12 flex items-center justify-center cursor-pointer font-bold transition ${baseColor} border border-gray-400`}
+                  >
+                    {cell === "queen" && (
+                      <span className="text-black text-xl">♛</span>
+                    )}
+                    {cell === "x" && (
+                      <span className="text-black text-lg">X</span>
+                    )}
+                    {isInvalidCell && (
+                      <div
+                        className="absolute inset-0 pointer-events-none rounded"
+                        style={{
+                          backgroundImage:
+                            "repeating-linear-gradient(135deg, rgba(239,68,68,0.65) 0px, rgba(239,68,68,0.65) 8px, transparent 8px, transparent 16px)",
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Leaderboard absolutely positioned to the right */}
+          <div className="absolute left-[calc(50%+13rem)] top-0 w-64 text-gray-800">
+            <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">
+              Fastest Times (Size {size})
+            </h2>
+            <Leaderboard size={size} />
+          </div>
         </div>
       ) : (
         <p>Loading board...</p>
       )}
-
-      {/* Leaderboard Section */}
-      <div className="mt-8 w-[22rem] text-gray-800">
-        <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">
-          Leaderboard
-        </h2>
-        <Leaderboard />
-      </div>
     </main>
   );
+}
+function Leaderboard({ size }: { size: number }) {
+  const [entries, setEntries] = React.useState<
+    {
+      name: string;
+      timeSeconds: number;
+      size: number;
+      boardType: string;
+      solvedAt: string;
+    }[]
+  >([]);
 
-  function Leaderboard() {
-    const [entries, setEntries] = React.useState<
-      {
-        name: string;
-        timeSeconds: number;
-        size: number;
-        boardType: string;
-        solvedAt: string;
-      }[]
-    >([]);
+  React.useEffect(() => {
+    fetch(`http://localhost:8080/api/leaderboard/${size}`)
+      .then((res) => res.json())
+      .then((data) => setEntries(data))
+      .catch((err) => console.error("Error loading leaderboard:", err));
+  }, [size]);
 
-    // Load leaderboard on mount
-    React.useEffect(() => {
-      fetch("http://localhost:8080/api/leaderboard")
-        .then((res) => res.json())
-        .then((data) => setEntries(data))
-        .catch((err) => console.error("Error loading leaderboard:", err));
-    }, []);
-
-    if (entries.length === 0) {
-      return (
-        <p className="text-sm text-gray-500 text-center">
-          No results yet — solve a board to record your time!
-        </p>
-      );
-    }
-
-    const fmt = (s: number) =>
-      `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
-        2,
-        "0"
-      )}`;
-
+  if (entries.length === 0) {
     return (
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b border-gray-300">
-            <th className="text-left py-1">Name</th>
-            <th className="text-center py-1">Time</th>
-            <th className="text-center py-1">Size</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((e, i) => (
-            <tr key={i} className="border-b border-gray-200">
-              <td className="py-1">{e.name}</td>
-              <td className="text-center py-1">{fmt(e.timeSeconds)}</td>
-              <td className="text-center py-1">{e.size}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <p className="text-sm text-gray-500 text-center">
+        No records yet for {size}×{size}.
+      </p>
     );
   }
+
+  const fmt = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
+      2,
+      "0"
+    )}`;
+
+  return (
+    <table className="w-full text-sm border-collapse">
+      <thead>
+        <tr className="border-b border-gray-300">
+          <th className="text-left py-1">Name</th>
+          <th className="text-center py-1">Time</th>
+          <th className="text-center py-1">Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((e, i) => (
+          <tr key={i} className="border-b border-gray-200">
+            <td className="py-1">{e.name}</td>
+            <td className="text-center py-1">{fmt(e.timeSeconds)}</td>
+            <td className="text-center py-1">{e.boardType}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }

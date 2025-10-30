@@ -1,10 +1,11 @@
 package com.example.demo.model;
 
-import java.util.Random;
+import com.example.demo.util.RegionGenerator;
 
 public class Board {
-    private int size;
-    private int[][] regions;
+
+    private final int size;
+    private final int[][] regions;
 
     public Board(int size, int[][] regions) {
         this.size = size;
@@ -19,24 +20,29 @@ public class Board {
         return regions;
     }
 
-    // Factory method to create a random board
-    public static Board randomBoard(int size, int regionCount) {
-        int[][] regions = com.example.demo.util.RegionGenerator.generateRegions(size, regionCount);
+    // --- Factory methods ---
+
+    // Deterministic “fixed” layout – same pattern each time for given size
+    public static Board fixedBoard(int size) {
+        int[][] regions = generateFixedRegions(size);
         return new Board(size, regions);
     }
 
+    // Randomly generated connected regions
+    public static Board randomBoard(int size) {
+        int[][] regions = RegionGenerator.generateConnectedRegions(size);
+        return new Board(size, regions);
+    }
 
-    // Factory method to create the fixed predefined board
-    public static Board fixedBoard() {
-        int[][] regions = {
-            {0,0,0,0,0,0,0},
-            {0,0,1,0,2,2,0},
-            {0,1,1,3,3,2,2},
-            {0,1,4,4,3,3,2},
-            {0,0,0,4,4,2,2},
-            {0,0,6,6,5,5,2},
-            {0,0,0,6,6,5,5}
-        };
-        return new Board(7, regions);
+    // --- Helpers ---
+    //  Simple fixed pattern generator with exactly `size` region IDs (0..size-1)
+    private static int[][] generateFixedRegions(int size) {
+        int[][] regions = new int[size][size];
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                regions[i][j] = (i + j) % Math.max(1, size);
+            }
+        }
+        return regions;
     }
 }

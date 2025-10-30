@@ -16,7 +16,8 @@ public class ValidationController {
     }
 
     @PostMapping("/validate")
-    public ValidationResult validateBoard(@RequestBody BoardRequest request) {
-        return validationService.validateBoard(request);
+    public ValidationResult validate(@RequestBody BoardRequest request) {
+        return validationService.validate(request.getBoard(),
+            request.getRegions(), request.getSize());
     }
 }

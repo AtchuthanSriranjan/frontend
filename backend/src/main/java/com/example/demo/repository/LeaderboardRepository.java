@@ -38,11 +38,20 @@ public class LeaderboardRepository {
         );
     }
 
-    // Fetch top 10 entries ordered by timeSeconds ascending and solvedAt ascending
     public List<LeaderboardEntry> findTop10() {
-        return jdbcTemplate.query(
-                "SELECT * FROM leaderboard ORDER BY time_seconds ASC, solved_at ASC LIMIT 10",
-                this::mapRow
-        );
-    }
+    return jdbcTemplate.query(
+        "SELECT * FROM leaderboard ORDER BY time_seconds ASC, solved_at ASC LIMIT 10",
+        this::mapRow
+    );
+}
+
+    // Fetch top 10 entries ordered by timeSeconds ascending and solvedAt ascending
+    public List<LeaderboardEntry> findTop10BySize(int size) {
+    return jdbcTemplate.query(
+        "SELECT * FROM leaderboard WHERE size = ? ORDER BY time_seconds ASC, solved_at ASC LIMIT 10",
+        this::mapRow,
+        size
+    );
+}
+
 }
