@@ -5,6 +5,9 @@ import ValidationMessage from "../components/ValidationMessage";
 import Board from "../components/Board";
 import Leaderboard from "../components/Leaderboard";
 
+// Use environment variable if available (for deployment on Vercel)
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+
 export default function Home() {
   const [size, setSize] = useState(7);
   const [boardType, setBoardType] = useState("fixed");
@@ -38,8 +41,8 @@ export default function Home() {
   useEffect(() => {
     const endpoint =
       boardType === "fixed"
-        ? `http://localhost:8080/api/board?size=${size}`
-        : `http://localhost:8080/api/random-board?size=${size}`;
+        ? `${API_BASE}/api/board?size=${size}`
+        : `${API_BASE}/api/random-board?size=${size}`;
 
     fetch(endpoint)
       .then((res) => res.json())
@@ -58,7 +61,7 @@ export default function Home() {
   useEffect(() => {
     if (regions.length === 0) return;
 
-    fetch("http://localhost:8080/api/validate", {
+    fetch("${API_BASE}/api/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ board, regions, size }),
@@ -81,7 +84,7 @@ export default function Home() {
           const name =
             prompt("Enter your name for the leaderboard:", "Guest") || "Guest";
 
-          fetch("http://localhost:8080/api/leaderboard", {
+          fetch("${API_BASE}/api/leaderboard", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
