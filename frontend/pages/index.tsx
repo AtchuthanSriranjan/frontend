@@ -61,7 +61,7 @@ export default function Home() {
   useEffect(() => {
     if (regions.length === 0) return;
 
-    fetch("${API_BASE}/api/validate", {
+    fetch(`${API_BASE}/api/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ board, regions, size }),
@@ -84,7 +84,7 @@ export default function Home() {
           const name =
             prompt("Enter your name for the leaderboard:", "Guest") || "Guest";
 
-          fetch("${API_BASE}/api/leaderboard", {
+          fetch(`${API_BASE}/api/leaderboard`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
