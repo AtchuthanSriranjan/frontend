@@ -1,14 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
-  output: "standalone",
-
-  experimental: {
-    turbo: {
-      rules: {},
-    },
-  },
+  output: "standalone", // Enable standalone output for easier deployment
 };
 
 module.exports = nextConfig;
