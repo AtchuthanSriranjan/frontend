@@ -108,7 +108,7 @@ export default function Home() {
   function createEmptyBoard(size: number): ("empty" | "x" | "queen")[][] {
     return Array(size)
       .fill(null)
-      .map(() => Array<("empty" | "x" | "queen")>(size).fill("empty"));
+      .map(() => Array<"empty" | "x" | "queen">(size).fill("empty"));
   }
 
   // Reset board
@@ -118,7 +118,6 @@ export default function Home() {
     setIsRunning(false);
     setValidation(null);
     setQueenCount(0);
-    setRefreshKey((prev) => prev + 1);
   }
 
   // Cell toggle handler
@@ -148,24 +147,35 @@ export default function Home() {
         seconds={seconds}
         bestTime={bestTime}
         queenCount={queenCount}
-      />
-
-      <ValidationMessage
-        validation={validation}
-        queenCount={queenCount}
-        size={size}
-      />
+        setRefreshKey={setRefreshKey}
+      >
+        <ValidationMessage
+          validation={validation}
+          queenCount={queenCount}
+          size={size}
+        />
+      </Controls>
 
       <div className="relative flex justify-center w-full">
         {regions.length > 0 ? (
           <>
-            <Board
-              board={board}
-              regions={regions}
-              validation={validation}
-              toggleCell={toggleCell}
-            />
-            <div className="absolute left-[calc(50%+13rem)] top-0 w-64 text-gray-800">
+            <div className="flex justify-center w-fit">
+              <Board
+                board={board}
+                regions={regions}
+                validation={validation}
+                toggleCell={toggleCell}
+              />
+            </div>
+            <div
+              className={`absolute top-0 w-64 text-gray-800 ${
+                size === 7
+                  ? "left-[calc(50%+15rem)]"
+                  : size === 8
+                  ? "left-[calc(50%+17rem)]"
+                  : "left-[calc(50%+19rem)]"
+              }`}
+            >
               <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">
                 Fastest Times (Size {size})
               </h2>

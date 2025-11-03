@@ -9,6 +9,8 @@ type Props = {
   seconds: number;
   bestTime: number | null;
   queenCount: number;
+  setRefreshKey: React.Dispatch<React.SetStateAction<number>>;
+  children?: React.ReactNode;
 };
 
 export default function Controls({
@@ -20,6 +22,8 @@ export default function Controls({
   seconds,
   bestTime,
   queenCount,
+  setRefreshKey,
+  children,
 }: Props) {
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
@@ -35,7 +39,7 @@ export default function Controls({
         <select
           value={size}
           onChange={(e) => setSize(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-400 rounded"
+          className="px-2 py-1 border border-gray-400 rounded text-black bg-white shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-300"
         >
           <option value={7}>7 × 7</option>
           <option value={8}>8 × 8</option>
@@ -46,7 +50,14 @@ export default function Controls({
       {/* Layout buttons */}
       <div className="flex gap-3 mb-4">
         <button
-          onClick={() => setBoardType("fixed")}
+          onClick={() => {
+            if (boardType === "fixed") {
+              // pressing again does nothing, or you could reload same layout if you prefer
+              setRefreshKey((prev) => prev + 1);
+            } else {
+              setBoardType("fixed");
+            }
+          }}
           className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
             boardType === "fixed"
               ? "bg-blue-600 text-white focus:ring-blue-400"
@@ -55,8 +66,16 @@ export default function Controls({
         >
           Fixed Layout
         </button>
+
         <button
-          onClick={() => setBoardType("random")}
+          onClick={() => {
+            if (boardType === "random") {
+              // pressing again = new random layout
+              setRefreshKey((prev) => prev + 1);
+            } else {
+              setBoardType("random");
+            }
+          }}
           className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 ${
             boardType === "random"
               ? "bg-blue-600 text-white focus:ring-blue-400"
@@ -66,6 +85,17 @@ export default function Controls({
           Random Layout
         </button>
       </div>
+
+      {/* Reset button */}
+      <button
+        onClick={resetBoard}
+        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+      >
+        Reset Board
+      </button>
+
+      {/* place ValidationMessage here */}
+      {children}
 
       {/* Timer and counters */}
       <div className="flex justify-between w-[22rem] text-gray-800">
@@ -90,14 +120,6 @@ export default function Controls({
           )}
         </div>
       </div>
-
-      {/* Reset button */}
-      <button
-        onClick={resetBoard}
-        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-      >
-        Reset Board
-      </button>
     </div>
   );
 }
