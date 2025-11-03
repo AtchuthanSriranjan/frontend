@@ -1,86 +1,39 @@
-import React, { useState, useEffect } from "react";
-
-// Define cell types
-type CellState = "empty" | "x" | "queen";
+import React, { useEffect, useState } from "react";
+import Header from "../components/Header";
+import Controls from "../components/Controls";
+import ValidationMessage from "../components/ValidationMessage";
+import Board from "../components/Board";
+import Leaderboard from "../components/Leaderboard";
 
 export default function Home() {
-  // Board configuration from backend
-  const [size, setSize] = useState<number>(7);
+  const [size, setSize] = useState(7);
+  const [boardType, setBoardType] = useState("fixed");
+  // Board holds cells of type: "empty" | "x" | "queen"
+  const [board, setBoard] = useState<("empty" | "x" | "queen")[][]>([]);
   const [regions, setRegions] = useState<number[][]>([]);
-
-  // Initial board is loaded by the effect below (depends on size/boardType/refreshKey)
-
-  // colormapping for regions
-  const regionColors: Record<number, string> = {
-    0: "bg-purple-300",
-    1: "bg-orange-200",
-    2: "bg-green-200",
-    3: "bg-blue-200",
-    4: "bg-slate-200",
-    5: "bg-red-300",
-    6: "bg-yellow-200",
-    7: "bg-pink-200",
-    8: "bg-teal-200",
-  };
-
-  // create an empty board
-  const createEmptyBoard = (): CellState[][] =>
-    Array.from({ length: size }, () => Array(size).fill("empty"));
-
-  // board state
-  const [board, setBoard] = useState<CellState[][]>(createEmptyBoard());
-
-  // board type state (fixed or random)
-  const [boardType, setBoardType] = useState<"fixed" | "random">("fixed");
-
-  // refresh key to force reload
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // reset board when size changes
-  useEffect(() => {
-    setBoard(createEmptyBoard());
-    setRegions([]);
-  }, [size]);
-
-  // cell toggle logic/cycle
-  const toggleCell = (row: number, col: number) => {
-    const newBoard = board.map((r, i) =>
-      r.map((c, j) => {
-        if (i === row && j === col) {
-          if (c === "empty") return "x";
-          if (c === "x") return "queen";
-          return "empty";
-        }
-        return c;
-      })
-    );
-    setBoard(newBoard);
-    // start timer when first queen is placed
-    if (!isRunning && newBoard.flat().includes("x")) {
-      setIsRunning(true);
-    }
-  };
-
-  // reset board
-  const resetBoard = () => {
-    setBoard(createEmptyBoard());
-    setSeconds(0);
-    setIsRunning(false);
-    setBestTime(null);
-    localStorage.removeItem("bestTime");
-  };
-
-  // count queens
-  const queenCount = board.flat().filter((c) => c === "queen").length;
-
-  // timer state
+  const [validation, setValidation] = useState<any>(null);
+  const [queenCount, setQueenCount] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [bestTime, setBestTime] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // message from backend
-  const [backendMessage, setBackendMessage] = useState<string>("");
+  // Timer logic
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isRunning) {
+      timer = setInterval(() => setSeconds((prev) => prev + 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isRunning]);
 
+  // Load best time from localStorage
+  useEffect(() => {
+    const storedBest = localStorage.getItem("bestTime");
+    if (storedBest) setBestTime(Number(storedBest));
+  }, []);
+
+  // Fetch board layout (fixed or random)
   useEffect(() => {
     const endpoint =
       boardType === "fixed"
@@ -90,48 +43,43 @@ export default function Home() {
     fetch(endpoint)
       .then((res) => res.json())
       .then((data) => {
-        setSize(data.size);
         setRegions(data.regions);
-        setBoard(createEmptyBoard());
+        setBoard(createEmptyBoard(data.size));
         setSeconds(0);
         setIsRunning(false);
+        setValidation(null);
+        setQueenCount(0);
       })
       .catch((err) => console.error("Error fetching board:", err));
-  }, [boardType, refreshKey, size]);
+  }, [boardType, size, refreshKey]);
 
-  // validation state
-  const [validation, setValidation] = useState<null | {
-    valid: boolean;
-    invalidRows: number[];
-    invalidCols: number[];
-    invalidRegions: number[];
-    diagonalConflicts: number[][];
-  }>(null);
-
-  // Auto-validate board whenever it changes
+  // Validation whenever board changes
   useEffect(() => {
     if (regions.length === 0) return;
 
-    const validate = async () => {
-      try {
-        const res = await fetch("http://localhost:8080/api/validate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ size, regions, board }),
-        });
-        const data = await res.json();
+    fetch("http://localhost:8080/api/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ board, regions, size }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
         setValidation(data);
-        if (
-          data.valid &&
-          board.flat().filter((c) => c === "queen").length === size
-        ) {
+
+        const placedQueens = board.flat().filter((c) => c === "queen").length;
+        setQueenCount(placedQueens);
+
+        // Start timer when first queen placed
+        if (placedQueens > 0 && !isRunning) setIsRunning(true);
+
+        // Stop timer when solved
+        if (data.valid && placedQueens === size) {
           setIsRunning(false);
 
-          // Ask for player name
+          // Save leaderboard entry
           const name =
             prompt("Enter your name for the leaderboard:", "Guest") || "Guest";
 
-          // Save to Spring Boot backend
           fetch("http://localhost:8080/api/leaderboard", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -139,13 +87,11 @@ export default function Home() {
               name,
               timeSeconds: seconds,
               size,
-              boardType: boardType, // "fixed" or "random"
+              boardType,
             }),
-          }).catch((err) =>
-            console.error("Failed to save leaderboard entry:", err)
-          );
+          }).catch((err) => console.error("Error saving leaderboard:", err));
 
-          // Update best time if this solve is faster or no best time yet
+          // Update best time
           setBestTime((prevBest) => {
             if (prevBest === null || seconds < prevBest) {
               localStorage.setItem("bestTime", String(seconds));
@@ -154,255 +100,82 @@ export default function Home() {
             return prevBest;
           });
         }
-      } catch (e) {
-        console.error("Auto-validate error:", e);
-      }
-    };
+      })
+      .catch((err) => console.error("Validation error:", err));
+  }, [board, regions]);
 
-    validate();
-  }, [board, regions, size]);
+  // Create empty board
+  function createEmptyBoard(size: number): ("empty" | "x" | "queen")[][] {
+    return Array(size)
+      .fill(null)
+      .map(() => Array<("empty" | "x" | "queen")>(size).fill("empty"));
+  }
 
-  // timer effect
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    if (isRunning) {
-      timer = setInterval(() => setSeconds((s) => s + 1), 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [isRunning]);
+  // Reset board
+  function resetBoard() {
+    setBoard(createEmptyBoard(size));
+    setSeconds(0);
+    setIsRunning(false);
+    setValidation(null);
+    setQueenCount(0);
+    setRefreshKey((prev) => prev + 1);
+  }
 
-  // Load best time from localStorage on mount
-  useEffect(() => {
-    const storedBest = localStorage.getItem("bestTime");
-    if (storedBest) {
-      setBestTime(Number(storedBest));
-    }
-  }, []);
+  // Cell toggle handler
+  function toggleCell(i: number, j: number) {
+    setBoard((prev) => {
+      const newBoard = prev.map((row) => [...row]);
+      newBoard[i][j] =
+        newBoard[i][j] === "empty"
+          ? "x"
+          : newBoard[i][j] === "x"
+          ? "queen"
+          : "empty";
+      return newBoard;
+    });
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center bg-gray-100 py-10">
-      <h1 className="text-4xl font-bold mb-4 text-blue-700">Queens Puzzle</h1>
-      <p className="text-gray-700 mb-2 text-center">
-        Goal: 1 queen per row, column, and color region.
-        <br />
-        Tap once → X | Tap twice → Queen | Tap thrice → Empty.
-      </p>
+      <Header />
 
-      <button
-        onClick={resetBoard}
-        className="mb-6 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      >
-        Reset Board
-      </button>
-      {validation && (
-        <div
-          className={`mt-4 mb-6 p-3 rounded text-center w-64
-          ${
-            validation.valid && queenCount === size
-              ? "bg-green-300 text-green-900 font-semibold"
-              : validation.valid
-              ? "bg-gray-200 text-gray-800"
-              : "bg-red-200 text-red-800"
-          }`}
-        >
-          {validation.valid && queenCount === size
-            ? "You solved it!"
-            : validation.valid
-            ? "Board is valid!"
-            : "Board has errors."}
-        </div>
-      )}
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={() => setBoardType("fixed")}
-          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 transition
-            ${
-              boardType === "fixed"
-                ? "bg-blue-600 text-white focus:ring-blue-400"
-                : "bg-gray-200 text-black hover:bg-gray-300 focus:ring-gray-400"
-            }`}
-        >
-          Fixed Layout
-        </button>
+      <Controls
+        size={size}
+        setSize={setSize}
+        boardType={boardType}
+        setBoardType={setBoardType}
+        resetBoard={resetBoard}
+        seconds={seconds}
+        bestTime={bestTime}
+        queenCount={queenCount}
+      />
 
-        <button
-          onClick={() => {
-            if (boardType === "random") {
-              // already in random mode → just refresh
-              setRefreshKey((k) => k + 1);
-            } else {
-              // switch to random mode
-              setBoardType("random");
-            }
-          }}
-          className={`px-4 py-2 rounded shadow focus:outline-none focus:ring-2 transition
-            ${
-              boardType === "random"
-                ? "bg-blue-600 text-white focus:ring-blue-400"
-                : "bg-gray-200 text-black hover:bg-gray-300 focus:ring-gray-400"
-            }`}
-        >
-          Random Layout
-        </button>
+      <ValidationMessage
+        validation={validation}
+        queenCount={queenCount}
+        size={size}
+      />
+
+      <div className="relative flex justify-center w-full">
+        {regions.length > 0 ? (
+          <>
+            <Board
+              board={board}
+              regions={regions}
+              validation={validation}
+              toggleCell={toggleCell}
+            />
+            <div className="absolute left-[calc(50%+13rem)] top-0 w-64 text-gray-800">
+              <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">
+                Fastest Times (Size {size})
+              </h2>
+              <Leaderboard size={size} />
+            </div>
+          </>
+        ) : (
+          <p>Loading board...</p>
+        )}
       </div>
-
-      {/* Queen count and timer above the board */}
-      <div className="flex justify-between items-center w-[22rem] mb-2 text-gray-800">
-        <p>
-          Queens placed:{" "}
-          <span className="font-bold text-blue-700">{queenCount}</span>
-        </p>
-        <div className="text-right">
-          <p>
-            Time:{" "}
-            <span className="font-bold text-blue-700">
-              {String(Math.floor(seconds / 60)).padStart(2, "0")}:
-              {String(seconds % 60).padStart(2, "0")}
-            </span>
-          </p>
-          {bestTime !== null && (
-            <p className="text-sm text-gray-600">
-              Best:{" "}
-              <span className="font-semibold text-emerald-700">
-                {String(Math.floor(bestTime / 60)).padStart(2, "0")}:
-                {String(bestTime % 60).padStart(2, "0")}
-              </span>
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Board size selector */}
-      <div className="mb-4">
-        <label className="mr-2 font-semibold text-gray-700">Board size:</label>
-        <select
-          value={size}
-          onChange={(e) => setSize(Number(e.target.value))}
-          className="px-2 py-1 border border-gray-400 rounded"
-        >
-          <option value={7}>7 × 7</option>
-          <option value={8}>8 × 8</option>
-          <option value={9}>9 × 9</option>
-        </select>
-      </div>
-
-      {/* Board rendering */}
-      {regions.length === size &&
-      regions.every((row) => row && row.length === size) ? (
-        <div className="relative flex justify-center w-full">
-          {/* Centered board */}
-          <div
-            className="grid gap-1"
-            style={{ gridTemplateColumns: `repeat(${size}, 3rem)` }}
-          >
-            {board.map((row, i) =>
-              row.map((cell, j) => {
-                const regionId = regions[i]?.[j] ?? 0;
-                const baseColor = regionColors[regionId];
-
-                const isInvalidCell =
-                  validation &&
-                  !validation.valid &&
-                  (validation.invalidRows.includes(i) ||
-                    validation.invalidCols.includes(j) ||
-                    validation.invalidRegions.includes(regionId) ||
-                    validation.diagonalConflicts.some(
-                      ([r, c]) => r === i && c === j
-                    ));
-
-                return (
-                  <div
-                    key={`${i}-${j}`}
-                    onClick={() => toggleCell(i, j)}
-                    className={`relative w-12 h-12 flex items-center justify-center cursor-pointer font-bold transition ${baseColor} border border-gray-400`}
-                  >
-                    {cell === "queen" && (
-                      <span className="text-black text-xl">♛</span>
-                    )}
-                    {cell === "x" && (
-                      <span className="text-black text-lg">X</span>
-                    )}
-                    {isInvalidCell && (
-                      <div
-                        className="absolute inset-0 pointer-events-none rounded"
-                        style={{
-                          backgroundImage:
-                            "repeating-linear-gradient(135deg, rgba(239,68,68,0.65) 0px, rgba(239,68,68,0.65) 8px, transparent 8px, transparent 16px)",
-                        }}
-                      />
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Leaderboard absolutely positioned to the right */}
-          <div className="absolute left-[calc(50%+13rem)] top-0 w-64 text-gray-800">
-            <h2 className="text-lg font-semibold mb-2 text-center text-blue-700">
-              Fastest Times (Size {size})
-            </h2>
-            <Leaderboard size={size} />
-          </div>
-        </div>
-      ) : (
-        <p>Loading board...</p>
-      )}
     </main>
-  );
-}
-function Leaderboard({ size }: { size: number }) {
-  const [entries, setEntries] = React.useState<
-    {
-      name: string;
-      timeSeconds: number;
-      size: number;
-      boardType: string;
-      solvedAt: string;
-    }[]
-  >([]);
-
-  React.useEffect(() => {
-    fetch(`http://localhost:8080/api/leaderboard/${size}`)
-      .then((res) => res.json())
-      .then((data) => setEntries(data))
-      .catch((err) => console.error("Error loading leaderboard:", err));
-  }, [size]);
-
-  if (entries.length === 0) {
-    return (
-      <p className="text-sm text-gray-500 text-center">
-        No records yet for {size}×{size}.
-      </p>
-    );
-  }
-
-  const fmt = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
-      2,
-      "0"
-    )}`;
-
-  return (
-    <table className="w-full text-sm border-collapse">
-      <thead>
-        <tr className="border-b border-gray-300">
-          <th className="text-left py-1">Name</th>
-          <th className="text-center py-1">Time</th>
-          <th className="text-center py-1">Type</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((e, i) => (
-          <tr key={i} className="border-b border-gray-200">
-            <td className="py-1">{e.name}</td>
-            <td className="text-center py-1">{fmt(e.timeSeconds)}</td>
-            <td className="text-center py-1">{e.boardType}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
