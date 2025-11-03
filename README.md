@@ -48,3 +48,26 @@ while ensuring no two queens touch, not even diagonally.
 ---
 
 ## Project Structure
+
+```mermaid
+graph TD
+  subgraph Frontend
+    A[index.tsx]
+    A --> B[Board.tsx]
+    A --> C[Controls.tsx]
+    A --> D[Leaderboard.tsx]
+    B --> E[Cell.tsx]
+  end
+
+  subgraph Backend
+    F[BoardController] --> G[BoardService]
+    G --> H[Board + RegionGenerator]
+    F --> I[ValidationController]
+    I --> J[ValidationService]
+    J --> K[BoardValidator]
+    L[LeaderboardController] --> M[LeaderboardRepository]
+    M --> N[(SQLite Database)]
+  end
+
+  D --> L
+```
