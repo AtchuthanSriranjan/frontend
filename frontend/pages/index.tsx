@@ -29,9 +29,10 @@ export default function Home() {
 
   // Load best time from localStorage
   useEffect(() => {
-    const storedBest = localStorage.getItem("bestTime");
+    const storedBest = localStorage.getItem(`bestTime_${size}_${boardType}`);
     if (storedBest) setBestTime(Number(storedBest));
-  }, []);
+    else setBestTime(null);
+  }, [size, boardType]);
 
   // Fetch board layout (fixed or random)
   useEffect(() => {
@@ -94,7 +95,10 @@ export default function Home() {
           // Update best time
           setBestTime((prevBest) => {
             if (prevBest === null || seconds < prevBest) {
-              localStorage.setItem("bestTime", String(seconds));
+              localStorage.setItem(
+                `bestTime_${size}_${boardType}`,
+                String(seconds)
+              );
               return seconds;
             }
             return prevBest;
