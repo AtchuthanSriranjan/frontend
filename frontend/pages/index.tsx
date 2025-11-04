@@ -50,22 +50,44 @@ export default function Home() {
 
   // Fetch board layout (fixed or random)
   useEffect(() => {
+    // Helper: fetch with timeout so production doesn't hang indefinitely
+    const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 6000) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      const opts: RequestInit = { ...options, signal: controller.signal };
+      return fetch(url, opts).finally(() => clearTimeout(id));
+    };
+
+    const fallbackRegions = (n: number): number[][] =>
+      Array.from({ length: n }, (_, i) =>
+        Array.from({ length: n }, (_, j) => (i + j) % Math.max(1, n))
+      );
+
     const endpoint =
       boardType === "fixed"
         ? `${API_BASE}/api/board?size=${size}`
         : `${API_BASE}/api/random-board?size=${size}`;
 
-    fetch(endpoint)
+    fetchWithTimeout(endpoint)
       .then((res) => res.json())
       .then((data) => {
-        setRegions(data.regions);
-        setBoard(createEmptyBoard(data.size));
+        const r = Array.isArray(data?.regions) && data.regions.length
+          ? data.regions
+          : fallbackRegions(size);
+        const s = Number.isFinite(data?.size) ? data.size : size;
+        setRegions(r);
+        setBoard(createEmptyBoard(s));
         setSeconds(0);
         setIsRunning(false);
         setValidation(null);
         setQueenCount(0);
       })
-      .catch((err) => console.error("Error fetching board:", err));
+      .catch((err) => {
+        console.error("Error fetching board:", err);
+        // Fallback to local fixed regions so UI still renders
+        setRegions(fallbackRegions(size));
+        setBoard(createEmptyBoard(size));
+      });
   }, [boardType, size, refreshKey]);
 
   // Validation whenever board changes
