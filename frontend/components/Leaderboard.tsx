@@ -8,18 +8,29 @@ type Entry = {
   solvedAt: string;
 };
 
-export default function Leaderboard({ size }: { size: number }) {
+export default function Leaderboard({
+  size,
+  refreshKey,
+}: {
+  size: number;
+  refreshKey: number;
+}) {
   const [entries, setEntries] = useState<Entry[]>([]);
+  const API_BASE =
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)
+      ? "http://localhost:8080"
+      : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/leaderboard/${size}`)
+    fetch(`${API_BASE}/api/leaderboard/${size}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setEntries(data);
         else setEntries([]);
       })
       .catch(() => setEntries([]));
-  }, [size]);
+  }, [size, refreshKey]); // refresh when key changes
 
   if (entries.length === 0)
     return (

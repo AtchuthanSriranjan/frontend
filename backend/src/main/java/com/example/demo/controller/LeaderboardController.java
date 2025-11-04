@@ -17,8 +17,15 @@ public class LeaderboardController {
     }
 
     @PostMapping
-    public void addEntry(@RequestBody LeaderboardEntry entry) {
-        repository.save(entry);
+    public LeaderboardEntry addEntry(@RequestBody LeaderboardEntry entry) {
+        // Normalize basic fields
+        if (entry.getName() == null || entry.getName().isBlank()) {
+            entry.setName("Guest");
+        }
+        if (entry.getBoardType() == null || entry.getBoardType().isBlank()) {
+            entry.setBoardType("fixed");
+        }
+        return repository.saveAndReturn(entry);
     }
 
     @GetMapping
@@ -28,8 +35,9 @@ public class LeaderboardController {
     }
 
     @GetMapping("/{size}")
-    public List<LeaderboardEntry> getTopEntriesBySize(@PathVariable int size) {
-        List<LeaderboardEntry> results = repository.findTop10BySize(size);
+    public List<LeaderboardEntry> getLeaderboard(@PathVariable Integer size) {
+        List<LeaderboardEntry> results = repository.findBySizeOrderByTimeSecondsAsc(size);
         return results != null ? results : List.of();
     }
+
 }
