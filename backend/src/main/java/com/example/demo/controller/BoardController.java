@@ -2,6 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Board;
 import com.example.demo.service.BoardService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,9 +23,14 @@ public class BoardController {
         return boardService.getFixedBoard(size);
     }
 
-    /** Random connected board endpoint */
+    /** Random connected board endpoint (no-cache) */
     @GetMapping("/random-board")
-    public Board getRandomBoard(@RequestParam(defaultValue = "7") int size) {
-        return boardService.generateRandomBoard(size);
+    public ResponseEntity<Board> getRandomBoard(@RequestParam(defaultValue = "7") int size) {
+        Board board = boardService.generateRandomBoard(size);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(board);
     }
 }

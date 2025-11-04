@@ -66,9 +66,10 @@ export default function Home() {
     const endpoint =
       boardType === "fixed"
         ? `${API_BASE}/api/board?size=${size}`
-        : `${API_BASE}/api/random-board?size=${size}`;
+        : `${API_BASE}/api/random-board?size=${size}&t=${Date.now()}`; // cache-buster for production
 
-    fetchWithTimeout(endpoint)
+    const fetchOptions = boardType === "random" ? { cache: "no-store" as const } : {};
+    fetchWithTimeout(endpoint, fetchOptions)
       .then((res) => res.json())
       .then((data) => {
         const r = Array.isArray(data?.regions) && data.regions.length
