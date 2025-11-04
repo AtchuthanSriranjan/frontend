@@ -5,12 +5,8 @@ import ValidationMessage from "../components/ValidationMessage";
 import Board from "../components/Board";
 import Leaderboard from "../components/Leaderboard";
 
-// Prefer local API when running on localhost; otherwise use env or localhost fallback
-const API_BASE =
-  typeof window !== "undefined" &&
-  ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)
-    ? "http://localhost:8080"
-    : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+// Use environment variable if available (for deployment on Vercel)
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 export default function Home() {
   const [size, setSize] = useState(7);
@@ -44,11 +40,6 @@ export default function Home() {
 
   // Fetch board layout (fixed or random)
   useEffect(() => {
-    const fallbackRegions = (n: number): number[][] =>
-      Array.from({ length: n }, (_, i) =>
-        Array.from({ length: n }, (_, j) => (i + j) % Math.max(1, n))
-      );
-
     const endpoint =
       boardType === "fixed"
         ? `${API_BASE}/api/board?size=${size}`
@@ -57,23 +48,14 @@ export default function Home() {
     fetch(endpoint)
       .then((res) => res.json())
       .then((data) => {
-        const r = Array.isArray(data?.regions) && data.regions.length
-          ? data.regions
-          : fallbackRegions(size);
-        const s = Number.isFinite(data?.size) ? data.size : size;
-        setRegions(r);
-        setBoard(createEmptyBoard(s));
+        setRegions(data.regions);
+        setBoard(createEmptyBoard(data.size));
         setSeconds(0);
         setIsRunning(false);
         setValidation(null);
         setQueenCount(0);
       })
-      .catch((err) => {
-        console.error("Error fetching board:", err);
-        // Fallback to local fixed regions so UI still works
-        setRegions(fallbackRegions(size));
-        setBoard(createEmptyBoard(size));
-      });
+      .catch((err) => console.error("Error fetching board:", err));
   }, [boardType, size, refreshKey]);
 
   // Validation whenever board changes
