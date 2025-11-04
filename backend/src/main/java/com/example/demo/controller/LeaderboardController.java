@@ -7,7 +7,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/leaderboard")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "https://queens-project.vercel.app"})
 public class LeaderboardController {
 
     private final LeaderboardRepository repository;

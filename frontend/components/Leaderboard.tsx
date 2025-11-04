@@ -16,11 +16,14 @@ export default function Leaderboard({
   refreshKey: number;
 }) {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const API_BASE =
-    typeof window !== "undefined" &&
-    ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)
-      ? "http://localhost:8080"
-      : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+  const API_BASE = (() => {
+    const hosted = "https://queens-project.onrender.com";
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (["localhost", "127.0.0.1", "::1"].includes(host)) return "http://localhost:8080";
+    }
+    return process.env.NEXT_PUBLIC_API_BASE || hosted;
+  })();
 
   useEffect(() => {
     fetch(`${API_BASE}/api/leaderboard/${size}`)

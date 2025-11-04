@@ -5,8 +5,18 @@ import ValidationMessage from "../components/ValidationMessage";
 import Board from "../components/Board";
 import Leaderboard from "../components/Leaderboard";
 
-// Use environment variable if available (for deployment on Vercel)
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+// Resolve API base:
+// - Localhost → http://localhost:8080
+// - NEXT_PUBLIC_API_BASE if provided
+// - Production fallback → hosted backend
+const API_BASE = (() => {
+  const hosted = "https://queens-project.onrender.com";
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (["localhost", "127.0.0.1", "::1"].includes(host)) return "http://localhost:8080";
+  }
+  return process.env.NEXT_PUBLIC_API_BASE || hosted;
+})();
 
 export default function Home() {
   const [size, setSize] = useState(7);
