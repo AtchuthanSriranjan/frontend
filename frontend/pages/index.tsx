@@ -105,16 +105,11 @@ export default function Home() {
         setValidation(data);
 
         const placedQueens = board.flat().filter((c) => c === "queen").length;
-        setQueenCount(placedQueens);
 
-        // Start timer when first queen placed
-        if (placedQueens > 0 && !isRunning) setIsRunning(true);
-
-        // Stop timer when solved
+        // Stop timer and record when solved
         if (data.valid && placedQueens === size) {
           setIsRunning(false);
 
-          // Save leaderboard entry
           const name =
             prompt("Enter your name for the leaderboard:", "Guest") || "Guest";
 
@@ -131,7 +126,6 @@ export default function Home() {
             .then(() => setLeaderboardKey((k) => k + 1))
             .catch((err) => console.error("Error saving leaderboard:", err));
 
-          // Update best time
           setBestTime((prevBest) => {
             if (prevBest === null || seconds < prevBest) {
               localStorage.setItem(
@@ -146,6 +140,13 @@ export default function Home() {
       })
       .catch((err) => console.error("Validation error:", err));
   }, [board, regions]);
+
+  // Track queens and start timer independent of validation
+  useEffect(() => {
+    const placed = board.flat().filter((c) => c === "queen").length;
+    setQueenCount(placed);
+    if (placed > 0 && !isRunning) setIsRunning(true);
+  }, [board]);
 
   // Create empty board
   function createEmptyBoard(size: number): ("empty" | "x" | "queen")[][] {
